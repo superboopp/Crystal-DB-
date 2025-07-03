@@ -551,57 +551,47 @@ client.on('messageCreate', async message => {
             message.channel.send({ embeds: [kickEmbed] });
             break;
 
-            case 'ban':
-                if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-                    return errorEmbed(message.channel, "Missing permissions");
-                }
+            
+case 'ban':
+    if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+        return errorEmbed(message.channel, "Missing permissions");
+    }
 
-                const banTarget = message.mentions.members.first();
-                if (!banTarget) return errorEmbed(message.channel, "Mention a user");
-                if (!banTarget.bannable) return errorEmbed(message.channel, "Cannot ban this user");
+    const banTarget = message.mentions.members.first();
+    if (!banTarget) return errorEmbed(message.channel, "Mention a user");
+    if (!banTarget.bannable) return errorEmbed(message.channel, "Cannot ban this user");
+    
+    // Prevent self-banning
+    if (banTarget.id === message.author.id) {
+        return errorEmbed(message.channel, "You cannot ban yourself");
+    }
 
-                // Get full reason string
-                const banReason = getFullArgString().replace(banTarget.toString(), '').trim() || 'No reason provided';
-            await banTarget.ban({ reason: banReason });
+    // Get full reason string
+    const banReason = getFullArgString().replace(banTarget.toString(), '').trim() || 'No reason provided';
+    await banTarget.ban({ reason: banReason });
 
-            const unbanButton = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                .setCustomId(`unban_${banTarget.id}`)
-                .setLabel('Unban')
-                .setStyle(ButtonStyle.Danger)
-            );
+    const unbanButton = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+        .setCustomId(`unban_${banTarget.id}`)
+        .setLabel('Unban')
+        .setStyle(ButtonStyle.Danger)
+    );
 
-            const banEmbed = new EmbedBuilder()
-            .setTitle('User Banned')
-            .setColor(0xe74c3c)
-            .addFields(
-                { name: 'User', value: banTarget.user.tag, inline: true },
-                { name: 'Moderator', value: message.author.tag, inline: true },
-                { name: 'Reason', value: banReason }
-            )
-            .setTimestamp();
+    const banEmbed = new EmbedBuilder()
+    .setTitle('User Banned')
+    .setColor(0xe74c3c)
+    .addFields(
+        { name: 'User', value: banTarget.user.tag, inline: true },
+        { name: 'Moderator', value: message.author.tag, inline: true },
+        { name: 'Reason', value: banReason }
+    )
+    .setTimestamp();
 
-            message.channel.send({
-                embeds: [banEmbed],
-                components: [unbanButton]
-            });
-            break;
-
-            case 'unban':
-                if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-                    return errorEmbed(message.channel, "Missing permissions");
-                }
-
-                const userId = args[0]?.replace(/[<@!>]/g, '');
-                if (!userId) return errorEmbed(message.channel, "Provide user ID");
-
-                try {
-                    await message.guild.bans.remove(userId, `Unbanned by ${message.author.tag}`);
-                    successEmbed(message.channel, `Unbanned user <@${userId}>`);
-                } catch (e) {
-                    errorEmbed(message.channel, "Failed to unban user");
-                }
-                break;
+    message.channel.send({
+        embeds: [banEmbed],
+        components: [unbanButton]
+    });
+    break;
 
             case 'mute':
                 if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
