@@ -551,47 +551,62 @@ client.on('messageCreate', async message => {
             message.channel.send({ embeds: [kickEmbed] });
             break;
 
-            
-case 'ban':
-    if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-        return errorEmbed(message.channel, "Missing permissions");
-    }
+            case 'ban':
+                if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+                    return errorEmbed(message.channel, "Missing permissions");
+                }
 
-    const banTarget = message.mentions.members.first();
-    if (!banTarget) return errorEmbed(message.channel, "Mention a user");
-    if (!banTarget.bannable) return errorEmbed(message.channel, "Cannot ban this user");
-    
-    // Prevent self-banning
-    if (banTarget.id === message.author.id) {
-        return errorEmbed(message.channel, "You cannot ban yourself");
-    }
+                const banTarget = message.mentions.members.first();
+                if (!banTarget) return errorEmbed(message.channel, "Mention a user");
+                if (!banTarget.bannable) return errorEmbed(message.channel, "Cannot ban this user");
 
-    // Get full reason string
-    const banReason = getFullArgString().replace(banTarget.toString(), '').trim() || 'No reason provided';
-    await banTarget.ban({ reason: banReason });
+                // Prevent self-banning
+                if (banTarget.id === message.author.id) {
+                    return errorEmbed(message.channel, "You cannot ban yourself");
+                }
 
-    const unbanButton = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-        .setCustomId(`unban_${banTarget.id}`)
-        .setLabel('Unban')
-        .setStyle(ButtonStyle.Danger)
-    );
+                // Get full reason string
+                const banReason = getFullArgString().replace(banTarget.toString(), '').trim() || 'No reason provided';
+                await banTarget.ban({ reason: banReason });
 
-    const banEmbed = new EmbedBuilder()
-    .setTitle('User Banned')
-    .setColor(0xe74c3c)
-    .addFields(
-        { name: 'User', value: banTarget.user.tag, inline: true },
-        { name: 'Moderator', value: message.author.tag, inline: true },
-        { name: 'Reason', value: banReason }
-    )
-    .setTimestamp();
+                const unbanButton = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                    .setCustomId(`unban_${banTarget.id}`)
+                    .setLabel('Unban')
+                    .setStyle(ButtonStyle.Danger)
+                );
 
-    message.channel.send({
-        embeds: [banEmbed],
-        components: [unbanButton]
-    });
-    break;
+                const banEmbed = new EmbedBuilder()
+                .setTitle('User Banned')
+                .setColor(0xe74c3c)
+                .addFields(
+                    { name: 'User', value: banTarget.user.tag, inline: true },
+                    { name: 'Moderator', value: message.author.tag, inline: true },
+                    { name: 'Reason', value: banReason }
+                )
+                .setTimestamp();
+
+                message.channel.send({
+                    embeds: [banEmbed],
+                    components: [unbanButton]
+                });
+                break;
+
+            case 'unban':
+                if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+                    return errorEmbed(message.channel, "Missing permissions");
+                }
+
+                const userId = args[0]?.replace(/[<@!>]/g, '');
+                if (!userId) return errorEmbed(message.channel, "Provide user ID");
+
+                try {
+                    await message.guild.bans.remove(userId, `Unbanned by ${message.author.tag}`);
+                    successEmbed(message.channel, `Unbanned user <@${userId}>`);
+                } catch (e) {
+                    errorEmbed(message.channel, "Failed to unban user");
+                }
+                break;
 
             case 'mute':
                 if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
@@ -980,8 +995,36 @@ case 'ban':
                 break;
 
             case 'weight':
+                const subject = message.mentions.users.first() || message.author;
                 const weight = Math.floor(Math.random() * 600) + 1;
-                sendEmbed(message.channel, 'Weight', `You weigh ${weight} lbs.`);
+
+                sendEmbed(
+                    message.channel,
+                    'Weight Check',
+                    `${subject.username} weighs **${weight} lbs**.`
+                );
+                break;
+
+            case 'height':
+                const subject1 = message.mentions.users.first() || message.author;
+                const height = Math.floor(Math.random() * 800) + 1;
+
+                sendEmbed(
+                    message.channel,
+                    'Height Check',
+                    `${subject1.username} is **${height} inches**.`
+                );
+                break;
+
+            case 'bodycount':
+                const subject2 = message.mentions.users.first() || message.author;
+                const bodycount = Math.floor(Math.random() * 900) + 1;
+
+                sendEmbed(
+                    message.channel,
+                    'Height Check',
+                    `${subject2.username} has **${bodycount} bodys**.`
+                );
                 break;
 
             case 'bald':
@@ -1115,6 +1158,7 @@ case 'ban':
                     case 'eat':
                         // Get target user (mention or author)
                         const target = message.mentions.users.first() || message.author;
+
                         const username = target.username;
 
                         // 5% chance of being too full to eat
